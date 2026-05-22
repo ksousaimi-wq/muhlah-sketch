@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Muhlah — Credit Policy Simulation Engine (App Sketch)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* Muhlah brand palette — from official logo */
+    --navy:#1061a5; --navy2:#0b4d82; --teal:#1061a5; --teal-d:#0c4d83;
+    --cyan:#00b0f0; --cyan-d:#0795c9;
+    --ink:#1a2733; --muted:#757575; --line:#e4e8ef; --bg:#f3f5f9;
+    --ok:#2fa98f; --warn:#e08a1e; --bad:#d24b4b; --chip:#eef1f6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'IBM Plex Sans','IBM Plex Sans Arabic',-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);}
+  .sketch-banner{background:#fff4d6;color:#7a5a12;font-size:12px;text-align:center;padding:5px;border-bottom:1px solid #e9d9a3;}
+  .app{display:flex;min-height:100vh;}
+
+  /* Sidebar */
+  .side{width:212px;background:var(--navy);color:#d6e7f3;flex-shrink:0;}
+  .brand{padding:16px 18px 14px;border-bottom:1px solid rgba(255,255,255,.15);}
+  .logo{background:#fff;border-radius:10px;padding:9px 12px;display:inline-flex;}
+  .logo svg{height:44px;width:auto;display:block;}
+  .brand span{display:block;font-size:10.5px;color:#a9cde4;margin-top:9px;}
+  .nav{padding:10px 0;}
+  .nav a{display:flex;gap:9px;align-items:center;padding:9px 18px;color:#d6e7f3;text-decoration:none;font-size:13px;cursor:pointer;border-left:3px solid transparent;}
+  .nav a:hover{background:#0e5896;}
+  .nav a.active{background:var(--navy2);color:#fff;border-left-color:var(--cyan);}
+  .nav .ico{width:16px;text-align:center;opacity:.85;}
+  .side-foot{position:sticky;top:100vh;padding:14px 18px;font-size:11px;color:#9ec6df;border-top:1px solid rgba(255,255,255,.15);}
+
+  /* Topbar */
+  .main{flex:1;display:flex;flex-direction:column;}
+  .top{background:#fff;border-bottom:1px solid var(--line);padding:11px 24px;display:flex;align-items:center;justify-content:space-between;}
+  .top h1{font-size:16px;font-weight:600;}
+  .top .right{display:flex;gap:14px;align-items:center;}
+  .role{font-size:12px;color:var(--muted);}
+  .role select{font-size:12px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--teal);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;}
+
+  .content{padding:22px 24px;}
+  .screen{display:none;}
+  .screen.active{display:block;}
+  h2.sec{font-size:15px;margin-bottom:3px;}
+  p.sub{font-size:12.5px;color:var(--muted);margin-bottom:16px;}
+
+  /* Cards */
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+  .kpi{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px 16px;}
+  .kpi .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+  .kpi .val{font-size:23px;font-weight:700;margin-top:5px;}
+  .kpi .delta{font-size:11.5px;margin-top:3px;}
+  .up{color:var(--ok);} .down{color:var(--bad);} .flat{color:var(--muted);}
+
+  .panel{background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin-bottom:16px;}
+  .panel h3{font-size:13px;margin-bottom:12px;}
+  .panel h3 .hint{font-weight:400;color:var(--muted);font-size:11.5px;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.3px;padding:7px 8px;border-bottom:1px solid var(--line);}
+  td{padding:9px 8px;border-bottom:1px solid #f0f2f6;}
+  tr:last-child td{border-bottom:none;}
+
+  .badge{display:inline-block;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:20px;}
+  .b-draft{background:#eceff3;color:#5b6677;}
+  .b-sub{background:#e3eefb;color:#2a6bb5;}
+  .b-rev{background:#fff0d6;color:#9a6a12;}
+  .b-app{background:#dff1ee;color:#157a6e;}
+  .b-rej{background:#fbe3e3;color:#b23535;}
+  .b-ok{background:#dff1ee;color:#157a6e;}
+  .b-bad{background:#fbe3e3;color:#b23535;}
+
+  .btn{font-size:12.5px;padding:8px 14px;border-radius:7px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--ink);}
+  .btn:hover{background:#f6f8fb;}
+  .btn.primary{background:var(--teal);color:#fff;border-color:var(--teal);font-weight:600;}
+  .btn.primary:hover{background:var(--teal-d);}
+  .btn.dark{background:var(--navy2);color:#fff;border-color:var(--navy2);}
+  .btn.danger{background:#fff;color:var(--bad);border-color:#edc3c3;}
+  .btn-row{display:flex;gap:9px;flex-wrap:wrap;margin-top:6px;}
+
+  /* Scenario builder */
+  .build-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;}
+  .field{display:grid;grid-template-columns:1fr 88px 88px;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #f0f2f6;font-size:12.5px;}
+  .field .fl{color:var(--ink);}
+  .field .fl small{display:block;color:var(--muted);font-size:11px;}
+  .field input,.field select{width:100%;padding:5px 7px;border:1px solid var(--line);border-radius:6px;font-size:12.5px;}
+  .field .base{color:var(--muted);text-align:center;font-size:12px;}
+  .changed input{border-color:var(--cyan);background:#e6f7fe;}
+  .col-head{display:grid;grid-template-columns:1fr 88px 88px;gap:10px;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.3px;padding-bottom:6px;}
+
+  /* Guardrail banner */
+  .gbar{border-radius:9px;padding:12px 15px;margin-bottom:16px;font-size:12.5px;display:flex;gap:10px;align-items:flex-start;}
+  .gbar.bad{background:#fdecec;border:1px solid #f3c5c5;color:#8a2f2f;}
+  .gbar.ok{background:#e9f6f4;border:1px solid #bfe3dd;color:#1b6258;}
+  .gbar .gi{font-size:16px;}
+  .gbar b{display:block;margin-bottom:2px;}
+
+  /* charts */
+  .bars{display:flex;align-items:flex-end;gap:4px;height:120px;padding-top:6px;}
+  .bars .bar{flex:1;background:#cfd9ea;border-radius:3px 3px 0 0;}
+  .bars .bar.hl{background:var(--teal);}
+  .bars .bar.over{background:#e6a3a3;}
+  .axis{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:5px;}
+  .tornado .trow{display:grid;grid-template-columns:150px 1fr;gap:10px;align-items:center;font-size:12px;padding:5px 0;}
+  .tornado .tbar{height:16px;background:var(--teal);border-radius:3px;}
+  .legend{font-size:11px;color:var(--muted);margin-top:8px;}
+
+  /* workflow */
+  .flow{display:flex;align-items:center;gap:6px;margin:6px 0 16px;flex-wrap:wrap;}
+  .step{font-size:11.5px;padding:6px 12px;border-radius:20px;background:var(--chip);color:var(--muted);}
+  .step.done{background:var(--navy2);color:#fff;}
+  .step.cur{background:var(--teal);color:#fff;}
+  .arrow{color:#c2cbd9;}
+  .timeline{font-size:12.5px;}
+  .tl{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #f0f2f6;}
+  .tl .dot{width:9px;height:9px;border-radius:50%;background:var(--teal);margin-top:4px;flex-shrink:0;}
+  .tl .meta{color:var(--muted);font-size:11px;}
+  textarea{width:100%;border:1px solid var(--line);border-radius:7px;padding:8px;font-size:12.5px;font-family:inherit;resize:vertical;}
+
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  .note{font-size:11.5px;color:var(--muted);margin-top:8px;}
+  .filters{display:flex;gap:8px;margin-bottom:12px;}
+  .filters select,.filters input{font-size:12px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;}
+</style>
+</head>
+<body>
+<div class="sketch-banner">APP SKETCH / WIREFRAME — non-functional mockup for layout review. All numbers are synthetic placeholders.</div>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="side">
+    <div class="brand">
+      <div class="logo"><svg viewBox="0 0 240.58 192.73" xmlns="http://www.w3.org/2000/svg"><defs><style>.cls-1{fill:#1061a5;}.cls-2{fill:#00b0f0;}.cls-3{fill:#757575;}</style></defs><path class="cls-1" d="M78.18,99.56l-6.45,24.38a37.5,37.5,0,0,1-15.1,3q-7,0-14.19-6.77t-10.71-6.78q-5.67,0-16.76,8.9Q7.49,129,0,135.55A94.74,94.74,0,0,1,5.55,115q2.72-6.71,15.93-17.15T41.54,87.44q4.51,0,9.61,8.19t12.58,8.19A28.27,28.27,0,0,0,78.18,99.56ZM56,39.06q-3.23,7.23-8.26,16.25-1.93,2.2-7.61,4.39t-8.64,2.19A15.79,15.79,0,0,1,28,61.31a16.16,16.16,0,0,0-3.48-.58q-2.45,0-5.93,3,1.8-5.41,11.74-20.77h1Q39.46,43.05,56,39.06Z"/><path class="cls-1" d="M134.8,97.78l-6.58,24.51q-8.27,6.45-17.42,6.46-14.05,0-13.67-25.42l.13-12.64q-9.67,21.68-25.54,33l6.44-24.12Q90.94,89,94.29,82.56q4-7.35,4-22.57,0-6.59-.64-19.55T97,20.9q0-3.36,2.58-11.16T104.22,0l1.16.52q1.29,22.32,1.29,89.78,0,15.48,10.71,15.48Q125.51,105.78,134.8,97.78Z"/><path class="cls-1" d="M185.37,97.78l-6.58,24.51q-3.22,2.2-11.62,7a65.68,65.68,0,0,0-23.47,22.83,58.94,58.94,0,0,0-9,31.35,57.29,57.29,0,0,1-6.45,9.29q-8.39-12.25-8.38-32,0-15.48,13.15-61.15,6.7-7.86,14.19-16.25a23.48,23.48,0,0,1,.39,4.38q0,6.84-4.78,16.26A52.33,52.33,0,0,1,133.12,118q-4.91,21-4.9,29.54,0,8.78,2.45,11.61,3.09-11.61,12.26-25.67A75.92,75.92,0,0,1,162.14,113Z"/><path class="cls-1" d="M240.58,64.24q-1.17,6.58-8.77,19.23a68.06,68.06,0,0,0-11.23-1.42q-11.09,0-23.35,17.41-14.83,20.9-20.25,24l6.58-24.25q4.13-3.35,9.67-11.93t9.16-11.8v-.91l-2.32-2.45a64.37,64.37,0,0,1,9.81-20q4.63,3.35,15.41,6.19T240.58,64.24Z"/><path class="cls-2" d="M134.79,39.69a4.26,4.26,0,0,1-4.26-4.26V5.68a4.27,4.27,0,0,1,8.53,0V35.43A4.27,4.27,0,0,1,134.79,39.69Z"/><path class="cls-2" d="M148.07,44.64a4.27,4.27,0,0,1-3-7.28l21-21a4.26,4.26,0,1,1,6,6l-21,21A4.27,4.27,0,0,1,148.07,44.64Z"/><path class="cls-2" d="M185,55.84H155.24a4.27,4.27,0,0,1,0-8.53H185a4.27,4.27,0,1,1,0,8.53Z"/><path class="cls-3" d="M30.9,138.4a.33.33,0,0,1,.36-.37h2.38a.58.58,0,0,1,.59.37l7.43,16.73h.1l7.29-16.73a.57.57,0,0,1,.58-.37H52a.33.33,0,0,1,.37.37v24.11a.33.33,0,0,1-.37.36H49.68a.32.32,0,0,1-.37-.36V145.23H49.2L43,158.89a.66.66,0,0,1-.66.44H40.93a.7.7,0,0,1-.7-.44l-6.15-13.66H34v17.28a.33.33,0,0,1-.37.36H31.27a.32.32,0,0,1-.37-.36Z"/><path class="cls-3" d="M80.65,138.4A.33.33,0,0,1,81,138h2.55a.33.33,0,0,1,.37.37v10.19a.19.19,0,0,0,.22.22H94.89a.19.19,0,0,0,.22-.22V138.4a.33.33,0,0,1,.37-.37H98a.33.33,0,0,1,.37.37v24.11a.32.32,0,0,1-.37.36H95.48a.33.33,0,0,1-.37-.36V152.06a.19.19,0,0,0-.22-.22H84.16a.19.19,0,0,0-.22.22v10.45a.32.32,0,0,1-.37.36H81a.32.32,0,0,1-.37-.36Z"/><path class="cls-3" d="M67.13,163.29A8.79,8.79,0,0,1,60.65,161q-2.35-2.31-2.35-6.74V138.41a.32.32,0,0,1,.37-.36h2.55a.33.33,0,0,1,.37.36V154.2a6.2,6.2,0,0,0,1.51,4.55,5.42,5.42,0,0,0,4,1.51,5.37,5.37,0,0,0,4-1.51,6.2,6.2,0,0,0,1.51-4.55V138.41a.32.32,0,0,1,.37-.36h2.55a.32.32,0,0,1,.37.36v15.82q0,4.43-2.34,6.74A8.75,8.75,0,0,1,67.13,163.29Z"/><path class="cls-3" d="M30.9,165.39a.32.32,0,0,1,.37-.36h2.54c.25,0,.38.12.38.36v21.22c0,.15.07.22.21.22H52.09a.33.33,0,0,1,.37.37v2.3a.32.32,0,0,1-.37.37H31.27a.32.32,0,0,1-.37-.37Z"/><path class="cls-3" d="M65,165.39a.43.43,0,0,1,.43-.36h2.38a.45.45,0,0,1,.47.36l8.51,24.11c.08.25,0,.37-.25.37H73.93a.45.45,0,0,1-.47-.37l-1.91-5.41h-10l-1.9,5.41a.5.5,0,0,1-.48.37H56.58c-.25,0-.33-.12-.26-.37Zm5.55,15.67-3.91-11.25h-.08l-3.94,11.25Z"/><path class="cls-3" d="M80.69,165.39a.32.32,0,0,1,.37-.36H83.6a.32.32,0,0,1,.37.36v10.19a.2.2,0,0,0,.22.22H94.93a.19.19,0,0,0,.22-.22V165.39a.33.33,0,0,1,.37-.36h2.55a.32.32,0,0,1,.37.36V189.5a.32.32,0,0,1-.37.37H95.52a.33.33,0,0,1-.37-.37V179.05a.2.2,0,0,0-.22-.22H84.19a.2.2,0,0,0-.22.22V189.5a.32.32,0,0,1-.37.37H81.06a.32.32,0,0,1-.37-.37Z"/></svg></div>
+      <span>Credit Policy Simulation Engine</span>
+    </div>
+    <nav class="nav">
+      <a class="active" onclick="show('dash',this)"><span class="ico">▦</span> Dashboard</a>
+      <a onclick="show('build',this)"><span class="ico">✎</span> New Scenario</a>
+      <a onclick="show('results',this)"><span class="ico">▶</span> Scenario Results</a>
+      <a onclick="show('registry',this)"><span class="ico">≡</span> Scenarios</a>
+      <a onclick="show('approvals',this)"><span class="ico">✓</span> Approvals</a>
+      <a onclick="show('data',this)"><span class="ico">⛁</span> Data &amp; Policy</a>
+    </nav>
+    <div class="side-foot">Pilot launch · 3-month window<br/>Guardrail: default rate &lt; 4%</div>
+  </aside>
+
+  <div class="main">
+    <!-- TOPBAR -->
+    <div class="top">
+      <h1 id="ttl">Dashboard</h1>
+      <div class="right">
+        <span class="role">Acting as&nbsp;
+          <select><option>Credit Analyst</option><option>Credit Manager</option></select>
+        </span>
+        <div class="avatar">KO</div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ============ DASHBOARD ============ -->
+      <section class="screen active" id="dash">
+        <h2 class="sec">Portfolio &amp; Scenario Overview</h2>
+        <p class="sub">Baseline reflects the current approved credit policy. Synthetic dataset: 1,500 applications · 500 funded loans.</p>
+        <div class="kpis">
+          <div class="kpi"><div class="lbl">Baseline Approved Volume</div><div class="val">512</div><div class="delta flat">of 1,500 applications (34.1%)</div></div>
+          <div class="kpi"><div class="lbl">Baseline Loss Rate</div><div class="val">3.1%</div><div class="delta flat">expected, fully matured</div></div>
+          <div class="kpi"><div class="lbl">Default Rate (P95)</div><div class="val">3.6%</div><div class="delta up">within 4% guardrail</div></div>
+          <div class="kpi"><div class="lbl">Baseline RAROC</div><div class="val">18.4%</div><div class="delta flat">risk-adjusted return</div></div>
+        </div>
+        <div class="panel">
+          <h3>Recent Scenarios <span class="hint">— what-if policy changes run by the credit team</span></h3>
+          <table>
+            <tr><th>ID</th><th>Scenario</th><th>Author</th><th>Approved Vol.</th><th>Loss Rate</th><th>RAROC</th><th>Guardrail</th><th>Status</th></tr>
+            <tr><td>SC-014</td><td>Lower min age 25 → 24</td><td>K. Ousaimi</td><td>550 (+38)</td><td>3.6%</td><td>17.9%</td><td><span class="badge b-bad">Breach</span></td><td><span class="badge b-rev">Under Review</span></td></tr>
+            <tr><td>SC-013</td><td>Min income 5,000 → 4,500</td><td>K. Ousaimi</td><td>578 (+66)</td><td>4.2%</td><td>16.1%</td><td><span class="badge b-bad">Breach</span></td><td><span class="badge b-rej">Rejected</span></td></tr>
+            <tr><td>SC-012</td><td>Allow classification E (capped)</td><td>A. Salem</td><td>531 (+19)</td><td>3.4%</td><td>18.0%</td><td><span class="badge b-ok">Pass</span></td><td><span class="badge b-app">Approved</span></td></tr>
+            <tr><td>SC-011</td><td>Max amount 10k → 12k</td><td>A. Salem</td><td>512 (0)</td><td>3.3%</td><td>19.2%</td><td><span class="badge b-ok">Pass</span></td><td><span class="badge b-sub">Submitted</span></td></tr>
+            <tr><td>SC-010</td><td>Govt service 3 → 2 months</td><td>K. Ousaimi</td><td>524 (+12)</td><td>3.2%</td><td>18.6%</td><td><span class="badge b-ok">Pass</span></td><td><span class="badge b-draft">Draft</span></td></tr>
+          </table>
+          <div class="btn-row"><button class="btn primary" onclick="show('build',navByLabel('New Scenario'))">+ New Scenario</button><button class="btn" onclick="show('registry',navByLabel('Scenarios'))">View all</button></div>
+        </div>
+      </section>
+
+      <!-- ============ SCENARIO BUILDER ============ -->
+      <section class="screen" id="build">
+        <h2 class="sec">New Scenario — Policy Editor</h2>
+        <p class="sub">Adjust any acceptance criterion. Edited rows are highlighted; the engine compares your changes against the approved baseline.</p>
+        <div class="build-grid">
+          <div class="panel">
+            <h3>Acceptance Criteria</h3>
+            <div class="col-head"><span>Rule</span><span style="text-align:center">Baseline</span><span style="text-align:center">Scenario</span></div>
+            <div class="field changed">
+              <span class="fl">Minimum age <small>Hijri years</small></span>
+              <span class="base">25</span>
+              <span><input value="24" /></span>
+            </div>
+            <div class="field">
+              <span class="fl">Maximum age <small>Hijri years</small></span>
+              <span class="base">60</span><span><input value="60" /></span>
+            </div>
+            <div class="field">
+              <span class="fl">Minimum income <small>SAR / month</small></span>
+              <span class="base">5,000</span><span><input value="5,000" /></span>
+            </div>
+            <div class="field">
+              <span class="fl">Service — government <small>months</small></span>
+              <span class="base">3</span><span><input value="3" /></span>
+            </div>
+            <div class="field">
+              <span class="fl">Service — private <small>months</small></span>
+              <span class="base">6</span><span><input value="6" /></span>
+            </div>
+            <div class="field">
+              <span class="fl">Excluded classification</span>
+              <span class="base">E</span>
+              <span><select><option>E</option><option>None</option><option>D, E</option></select></span>
+            </div>
+            <div class="field">
+              <span class="fl">Loan amount range <small>SAR</small></span>
+              <span class="base">2k–10k</span><span><input value="2k-10k" /></span>
+            </div>
+            <div class="field">
+              <span class="fl">Exclude military / retirees</span>
+              <span class="base">Yes</span>
+              <span><select><option>Yes</option><option>No</option></select></span>
+            </div>
+            <div class="field">
+              <span class="fl">Max DBR <small>debt burden ratio</small></span>
+              <span class="base">33%</span><span><input value="33%" /></span>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Run Settings</h3>
+            <div class="field" style="grid-template-columns:1fr;border:none;">
+              <label>Scenario name<br/><input style="margin-top:4px" value="Lower min age 25 → 24" /></label>
+            </div>
+            <div class="field" style="grid-template-columns:1fr;border:none;">
+              <label>Analysis methods</label>
+            </div>
+            <div style="font-size:12.5px;line-height:2;">
+              <label><input type="checkbox" checked /> Historical backtest (counterfactual replay)</label><br/>
+              <label><input type="checkbox" checked /> Monte Carlo — <input style="width:60px" value="10,000" /> runs</label><br/>
+              <label><input type="checkbox" checked /> Sensitivity / tornado analysis</label><br/>
+              <label><input type="checkbox" checked /> Adverse-selection check</label>
+            </div>
+            <div class="field" style="grid-template-columns:1fr;border:none;margin-top:8px">
+              <label>Objective weighting <small style="color:var(--muted)">primary KPI = risk-adjusted profit</small></label>
+            </div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.9">
+              Approved volume&nbsp; <input style="width:48px" value="0.3" /><br/>
+              Loss rate (min)&nbsp; <input style="width:48px" value="0.3" /><br/>
+              RAROC&nbsp; <input style="width:48px" value="0.4" />
+            </div>
+            <div class="btn-row" style="margin-top:14px">
+              <button class="btn primary" onclick="show('results',navByLabel('Scenario Results'))">▶ Run Simulation</button>
+              <button class="btn">Save as Draft</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ RESULTS ============ -->
+      <section class="screen" id="results">
+        <h2 class="sec">SC-014 · Lower min age 25 → 24</h2>
+        <p class="sub">Run completed · 10,000 Monte Carlo iterations · backtested on 1,500 synthetic applications · seed 4471 (reproducible).</p>
+
+        <div class="gbar bad">
+          <span class="gi">⚠</span>
+          <span>
+            <b>Guardrail flagged — portfolio default rate breaches the 4% limit</b>
+            P95 default rate is <b>4.3%</b> (baseline 3.6%). This scenario is marked <span class="badge b-bad">Non-compliant</span> but can still be submitted for approval — the Credit Manager makes the final decision.
+          </span>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi"><div class="lbl">Approved Volume</div><div class="val">550</div><div class="delta up">▲ +38 vs baseline</div></div>
+          <div class="kpi"><div class="lbl">Expected Loss Rate</div><div class="val">3.6%</div><div class="delta down">▲ +0.5 pp</div></div>
+          <div class="kpi"><div class="lbl">Default Rate (P95)</div><div class="val">4.3%</div><div class="delta down">▲ exceeds 4% guardrail</div></div>
+          <div class="kpi"><div class="lbl">RAROC</div><div class="val">17.9%</div><div class="delta down">▼ −0.5 pp</div></div>
+        </div>
+
+        <div class="two">
+          <div class="panel">
+            <h3>Monte Carlo — Portfolio Default Rate Distribution</h3>
+            <div class="bars">
+              <div class="bar" style="height:14%"></div><div class="bar" style="height:28%"></div>
+              <div class="bar" style="height:48%"></div><div class="bar hl" style="height:78%"></div>
+              <div class="bar hl" style="height:96%"></div><div class="bar hl" style="height:72%"></div>
+              <div class="bar over" style="height:50%"></div><div class="bar over" style="height:30%"></div>
+              <div class="bar over" style="height:16%"></div><div class="bar over" style="height:7%"></div>
+            </div>
+            <div class="axis"><span>2.6%</span><span>3.4%</span><span>4.0% ◄ limit</span><span>5.0%</span></div>
+            <div class="legend">Teal = within guardrail · Red = breach. ~21% of simulated outcomes exceed 4%.</div>
+          </div>
+          <div class="panel">
+            <h3>Sensitivity — Tornado <span class="hint">impact on loss rate</span></h3>
+            <div class="tornado">
+              <div class="trow"><span>Min income</span><div class="tbar" style="width:92%"></div></div>
+              <div class="trow"><span>Excluded classification</span><div class="tbar" style="width:74%"></div></div>
+              <div class="trow"><span>Max DBR</span><div class="tbar" style="width:57%"></div></div>
+              <div class="trow"><span>Min age</span><div class="tbar" style="width:34%"></div></div>
+              <div class="trow"><span>Service — private</span><div class="tbar" style="width:21%"></div></div>
+            </div>
+            <div class="legend">Lowering min age is a modest lever vs. income / classification.</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Backtest — Newly Eligible Applicants (age 24 cohort)</h3>
+          <table>
+            <tr><th>Segment</th><th>Applicants</th><th>Would Approve</th><th>Est. Default Rate</th><th>Avg. SIMAH</th><th>Adverse Selection</th></tr>
+            <tr><td>Baseline pool (age ≥ 25)</td><td>1,500</td><td>512</td><td>3.1%</td><td>692</td><td>—</td></tr>
+            <tr><td>New cohort (age 24)</td><td>61</td><td>38</td><td>6.4%</td><td>641</td><td><span class="badge b-bad">Elevated</span></td></tr>
+          </table>
+          <div class="note">⚠ The age-24 cohort has thinner credit files (avg SIMAH 641 vs 692) and ~2× the default rate — the main driver of the guardrail breach.</div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn primary" onclick="show('approvals',navByLabel('Approvals'))">Submit for Approval</button>
+          <button class="btn">Save</button>
+          <button class="btn">Export report (.docx)</button>
+          <button class="btn">Duplicate &amp; adjust</button>
+        </div>
+        <div class="note">Submission is always available — even for non-compliant scenarios. The guardrail flag travels with the scenario to the approver.</div>
+      </section>
+
+      <!-- ============ REGISTRY ============ -->
+      <section class="screen" id="registry">
+        <h2 class="sec">Scenario Registry</h2>
+        <p class="sub">Every run is persisted with its full configuration, results and audit trail. Nothing is lost.</p>
+        <div class="filters">
+          <select><option>All statuses</option><option>Draft</option><option>Submitted</option><option>Under Review</option><option>Approved</option><option>Rejected</option></select>
+          <select><option>All authors</option><option>K. Ousaimi</option><option>A. Salem</option></select>
+          <select><option>Guardrail: any</option><option>Pass only</option><option>Breach only</option></select>
+          <input placeholder="Search scenarios…" />
+        </div>
+        <div class="panel">
+          <table>
+            <tr><th>ID</th><th>Scenario</th><th>Author</th><th>Created</th><th>Guardrail</th><th>Status</th><th></th></tr>
+            <tr><td>SC-014</td><td>Lower min age 25 → 24</td><td>K. Ousaimi</td><td>22 May 2026</td><td><span class="badge b-bad">Breach</span></td><td><span class="badge b-rev">Under Review</span></td><td><button class="btn" onclick="show('results',navByLabel('Scenario Results'))">Open</button></td></tr>
+            <tr><td>SC-013</td><td>Min income 5,000 → 4,500</td><td>K. Ousaimi</td><td>21 May 2026</td><td><span class="badge b-bad">Breach</span></td><td><span class="badge b-rej">Rejected</span></td><td><button class="btn">Open</button></td></tr>
+            <tr><td>SC-012</td><td>Allow classification E (capped)</td><td>A. Salem</td><td>20 May 2026</td><td><span class="badge b-ok">Pass</span></td><td><span class="badge b-app">Approved</span></td><td><button class="btn">Open</button></td></tr>
+            <tr><td>SC-011</td><td>Max amount 10k → 12k</td><td>A. Salem</td><td>19 May 2026</td><td><span class="badge b-ok">Pass</span></td><td><span class="badge b-sub">Submitted</span></td><td><button class="btn">Open</button></td></tr>
+            <tr><td>SC-010</td><td>Govt service 3 → 2 months</td><td>K. Ousaimi</td><td>18 May 2026</td><td><span class="badge b-ok">Pass</span></td><td><span class="badge b-draft">Draft</span></td><td><button class="btn">Open</button></td></tr>
+            <tr><td>SC-009</td><td>Combined: age 24 + income 4,800</td><td>K. Ousaimi</td><td>16 May 2026</td><td><span class="badge b-bad">Breach</span></td><td><span class="badge b-rej">Rejected</span></td><td><button class="btn">Open</button></td></tr>
+          </table>
+        </div>
+        <div class="panel">
+          <h3>Compare Scenarios <span class="hint">— side by side on shared KPIs</span></h3>
+          <table>
+            <tr><th>KPI</th><th>Baseline</th><th>SC-014 (age 24)</th><th>SC-012 (class E)</th><th>SC-011 (12k)</th></tr>
+            <tr><td>Approved volume</td><td>512</td><td>550</td><td>531</td><td>512</td></tr>
+            <tr><td>Loss rate</td><td>3.1%</td><td>3.6%</td><td>3.4%</td><td>3.3%</td></tr>
+            <tr><td>Default rate P95</td><td>3.6%</td><td><span class="badge b-bad">4.3%</span></td><td>3.8%</td><td>3.7%</td></tr>
+            <tr><td>RAROC</td><td>18.4%</td><td>17.9%</td><td>18.0%</td><td>19.2%</td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ APPROVALS ============ -->
+      <section class="screen" id="approvals">
+        <h2 class="sec">Approval Workflow — SC-014</h2>
+        <p class="sub">Lower min age 25 → 24 · submitted by K. Ousaimi · awaiting Credit Manager decision.</p>
+
+        <div class="panel">
+          <h3>Workflow Status</h3>
+          <div class="flow">
+            <span class="step done">Draft</span><span class="arrow">→</span>
+            <span class="step done">Submitted</span><span class="arrow">→</span>
+            <span class="step cur">Under Review</span><span class="arrow">→</span>
+            <span class="step">Approved</span><span class="arrow">/</span>
+            <span class="step">Rejected</span>
+          </div>
+          <div class="gbar bad" style="margin-bottom:6px">
+            <span class="gi">⚠</span>
+            <span><b>This scenario is non-compliant</b> P95 default rate 4.3% exceeds the 4% guardrail. It was still submitted — approver discretion required.</span>
+          </div>
+        </div>
+
+        <div class="two">
+          <div class="panel">
+            <h3>Activity &amp; Audit Trail</h3>
+            <div class="timeline">
+              <div class="tl"><div class="dot"></div><div><b>Submitted for approval</b><div class="meta">K. Ousaimi · 22 May 2026, 14:08</div></div></div>
+              <div class="tl"><div class="dot"></div><div><b>Simulation run completed</b> — guardrail breach flagged<div class="meta">Engine · 22 May 2026, 14:05</div></div></div>
+              <div class="tl"><div class="dot"></div><div><b>Scenario created from baseline</b><div class="meta">K. Ousaimi · 22 May 2026, 13:52</div></div></div>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Credit Manager Decision</h3>
+            <p style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Visible to the Credit Manager role only.</p>
+            <textarea rows="4" placeholder="Decision rationale / conditions (e.g. cap age-24 approvals at SAR 5,000)…"></textarea>
+            <div class="btn-row" style="margin-top:10px">
+              <button class="btn primary">✓ Approve</button>
+              <button class="btn dark">Approve with conditions</button>
+              <button class="btn danger">✕ Reject</button>
+              <button class="btn">Return to analyst</button>
+            </div>
+            <div class="note">Approving a non-compliant scenario requires a written rationale (logged permanently).</div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3>Pending Approvals Queue</h3>
+          <table>
+            <tr><th>ID</th><th>Scenario</th><th>Submitted by</th><th>Guardrail</th><th>Status</th></tr>
+            <tr><td>SC-014</td><td>Lower min age 25 → 24</td><td>K. Ousaimi</td><td><span class="badge b-bad">Breach</span></td><td><span class="badge b-rev">Under Review</span></td></tr>
+            <tr><td>SC-011</td><td>Max amount 10k → 12k</td><td>A. Salem</td><td><span class="badge b-ok">Pass</span></td><td><span class="badge b-sub">Submitted</span></td></tr>
+          </table>
+        </div>
+      </section>
+
+      <!-- ============ DATA & POLICY ============ -->
+      <section class="screen" id="data">
+        <h2 class="sec">Data &amp; Policy</h2>
+        <p class="sub">The engine reads the system Excel export. Sheets keep the exact system layout; detail sheets hold the applicant fields the LOS already evaluates.</p>
+        <div class="two">
+          <div class="panel">
+            <h3>Loaded Dataset <span class="hint">— synthetic, system-format</span></h3>
+            <table>
+              <tr><th>Sheet</th><th>Origin</th><th>Rows</th></tr>
+              <tr><td>Loans</td><td>System export (unchanged)</td><td>500</td></tr>
+              <tr><td>Applications</td><td>System export (unchanged)</td><td>1,500</td></tr>
+              <tr><td>Cancelled</td><td>System export (unchanged)</td><td>180</td></tr>
+              <tr><td>Applicant_Details</td><td>Detail sheet</td><td>1,500</td></tr>
+              <tr><td>Loan_Performance</td><td>Detail sheet</td><td>500</td></tr>
+            </table>
+            <div class="btn-row"><button class="btn">Upload new export (.xlsx)</button></div>
+            <div class="note">When real LOS data is available, it drops into these same sheets — no format change.</div>
+          </div>
+          <div class="panel">
+            <h3>Approved Baseline Policy</h3>
+            <table>
+              <tr><th>Rule</th><th>Value</th></tr>
+              <tr><td>Nationality</td><td>Saudi only</td></tr>
+              <tr><td>Age band (Hijri)</td><td>25 – 60</td></tr>
+              <tr><td>Minimum income</td><td>SAR 5,000 / month</td></tr>
+              <tr><td>Service — govt / private</td><td>3 / 6 months</td></tr>
+              <tr><td>Excluded classification</td><td>E</td></tr>
+              <tr><td>Excluded employment</td><td>Military, retirees</td></tr>
+              <tr><td>Loan amount / term</td><td>SAR 2,000–10,000 · 3–6 mo</td></tr>
+              <tr><td>Max DBR</td><td>33%</td></tr>
+            </table>
+            <div class="note">Baseline is version-controlled; approved scenarios can be promoted to a new baseline.</div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  function show(id, el){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.querySelectorAll('.nav a').forEach(a=>a.classList.remove('active'));
+    if(el) el.classList.add('active');
+    var titles={dash:'Dashboard',build:'New Scenario',results:'Scenario Results',registry:'Scenarios',approvals:'Approvals',data:'Data & Policy'};
+    document.getElementById('ttl').textContent=titles[id]||'';
+    window.scrollTo(0,0);
+  }
+  function navByLabel(txt){
+    var found=null;
+    document.querySelectorAll('.nav a').forEach(a=>{ if(a.textContent.trim().indexOf(txt)>-1) found=a; });
+    return found;
+  }
+</script>
+</body>
+</html>
